@@ -26,7 +26,7 @@ const registerUser = async (req, res) => {
 
 //login
 const loginUser = async (req, res) => {
-  const { username, password,email,mobile } = req.body;
+  const { username, password} = req.body;
   try {
     
     const user = await User.findOne({ where: { username } });
@@ -37,12 +37,6 @@ const loginUser = async (req, res) => {
     const passwordValid=await verifyPassword(password, user.password)
     if(!passwordValid){
         return res.status(404).json("Incorrect password")
-    }
-    if(!email){
-      return res.status(404).json({message:"Incorrect email"})
-    }
-    if(!mobile){
-      return res.status(404).json({message:"invalid mobile number"})
     }
 
     
@@ -104,32 +98,24 @@ const getall=async(req,res)=>{
 
 //getprofile
 const getProfile = async (req, res) => {
-  let token;
-
-  
-  const authHeader = req.headers.authorization;
-  console.log("Auth Header:", authHeader);
-  
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
-    console.log("Token from Auth Header:", token);
+  if (!req.session || !req.session.token) {
+    return res.status(401).json({ message: "Session expired. Please log in again." });
   }
 
-  
-  if (!token && req.session.token) {
-    
-    token = req.session.token;
-    console.log("Token from Session:",token)
-    res.send("Token from Session:", token);
-   
+  const authHeader = req.headers.authorization; 
+  let token;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1]; 
+  } else if (req.session.token) {
+    token = req.session.token; 
   }
 
   if (!token) {
     return res.status(401).json({ message: "Unauthorized. No token found." });
   }
 
-  const decoded = verifyToken(token);
-
+  const decoded = verifyToken(token); 
   if (!decoded) {
     return res.status(401).json({ message: "Invalid or expired token." });
   }
@@ -145,6 +131,8 @@ const getProfile = async (req, res) => {
     res.status(500).json({ message: "Error retrieving profile.", error });
   }
 };
+
+
 
 //delete
 const deleteUser = async (req, res) => {
